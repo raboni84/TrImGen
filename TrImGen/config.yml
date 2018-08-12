@@ -29,5 +29,5 @@ SearchPatterns:
 - \\users\\.*\\recent\\
 - windows\\prefetch\\
 - windows\\appcompat\\
-- \.thumbs\.db$
+- thumbs\.db$
 - \$Recycle.Bin\\

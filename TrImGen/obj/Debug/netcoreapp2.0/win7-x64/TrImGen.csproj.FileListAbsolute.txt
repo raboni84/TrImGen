@@ -1,0 +1,13 @@
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\hostpolicy.dll
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\hostfxr.dll
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.exe
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.deps.json
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.runtimeconfig.json
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.runtimeconfig.dev.json
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.dll
+C:\Users\raboni\Projekte\TrImGen\TrImGen\bin\Debug\netcoreapp2.0\win7-x64\TrImGen.pdb
+C:\Users\raboni\Projekte\TrImGen\TrImGen\obj\Debug\netcoreapp2.0\win7-x64\TrImGen.csproj.CoreCompileInputs.cache
+C:\Users\raboni\Projekte\TrImGen\TrImGen\obj\Debug\netcoreapp2.0\win7-x64\TrImGen.AssemblyInfoInputs.cache
+C:\Users\raboni\Projekte\TrImGen\TrImGen\obj\Debug\netcoreapp2.0\win7-x64\TrImGen.AssemblyInfo.cs
+C:\Users\raboni\Projekte\TrImGen\TrImGen\obj\Debug\netcoreapp2.0\win7-x64\TrImGen.dll
+C:\Users\raboni\Projekte\TrImGen\TrImGen\obj\Debug\netcoreapp2.0\win7-x64\TrImGen.pdb

@@ -21,18 +21,6 @@ namespace TrImGen
         EFileAttributes dwFlagsAndAttributes,
         IntPtr hTemplateFile);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    static extern bool GetVolumeInformationByHandleW(
-        SafeFileHandle hDisk,
-        StringBuilder volumeNameBuffer,
-        int volumeNameSize,
-        ref uint volumeSerialNumber,
-        ref uint maximumComponentLength,
-        ref uint fileSystemFlags,
-        StringBuilder fileSystemNameBuffer,
-        int nFileSystemNameSize);
-
-    // Used to read in a file
     [DllImport("kernel32.dll")]
     public static extern bool ReadFile(
         SafeFileHandle hFile,
@@ -41,7 +29,6 @@ namespace TrImGen
         ref int lpNumberOfBytesRead,
         IntPtr lpOverlapped);
 
-    // Used to set the offset in file to start reading
     [DllImport("kernel32.dll")]
     public static extern bool SetFilePointerEx(
         SafeFileHandle hFile,
@@ -60,9 +47,6 @@ namespace TrImGen
       ref int pBytesReturned,
       IntPtr lpOverlapped);
     
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool SetEndOfFile(SafeFileHandle hDevice);
-
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool FlushFileBuffers(SafeFileHandle hDevice);
 
@@ -129,8 +113,6 @@ namespace TrImGen
 
     public DriveStream(string drivePath)
     {
-      // Gets a handle to the drive
-      // Note: use CloseHandle to close the handle you opened once work is done
       hDrive = CreateFile(
         drivePath,
         GenericRead,
