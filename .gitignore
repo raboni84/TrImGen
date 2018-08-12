@@ -1,0 +1,5 @@
+bin/*
+obj/*
+Debug/*
+Release/*
+netcoreapp2.0/*
