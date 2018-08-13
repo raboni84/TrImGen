@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using DiscUtils;
@@ -22,6 +23,7 @@ namespace TrImGen
     static void Main(string[] args)
     {
       DiscUtils.Complete.SetupHelper.SetupComplete();
+
       using (var sr = new StreamReader(@".\config.yml"))
       {
         var yaml = new Deserializer();
@@ -97,11 +99,11 @@ namespace TrImGen
     {
       string targetPath = null;
       if (config.TargetDiskType == TargetDiskType.Vhd)
-        targetPath = $".\\{targetName}_{Guid.NewGuid().ToString("n")}.vhd";
+        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhd";
       else if (config.TargetDiskType == TargetDiskType.Vdi)
-        targetPath = $".\\{targetName}_{Guid.NewGuid().ToString("n")}.vdi";
+        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vdi";
       else if (config.TargetDiskType == TargetDiskType.Raw)
-        targetPath = $".\\{targetName}_{Guid.NewGuid().ToString("n")}.raw";
+        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.raw";
       else
         throw new NotSupportedException();
       return targetPath;
@@ -109,35 +111,16 @@ namespace TrImGen
 
     private static void DetectFileSystemAndAnalyze(Stream s, IFileSystem target, string pathOffset = null)
     {
-      byte[] buf = new byte[4096];
-      if (s.Read(buf, 0, 4096) != 4096)
-        throw new IOException();
-      
-      if (buf[3] == 'N' && buf[4] == 'T' && buf[5] == 'F' && buf[6] == 'S' &&
-          buf[7] == 0x20 && buf[8] == 0x20 && buf[9] == 0x20 && buf[10] == 0x20)
+      var fileSystems = FileSystemManager.DetectFileSystems(s);
+      if (fileSystems.Any())
       {
-        using (NtfsFileSystem ntfs = new NtfsFileSystem(s))
+        foreach (var fs in fileSystems)
         {
-          AnalyzeFileSystem(ntfs, target, pathOffset);
-        }
-      }
-      else if (buf[3] == 'R' && buf[4] == 'e' && buf[5] == 'F' && buf[6] == 'S' &&
-          buf[7] == 0x20 && buf[8] == 0x20 && buf[9] == 0x20 && buf[10] == 0x20)
-      {
-        throw new NotSupportedException();
-      }
-      else if (FatFileSystem.Detect(s))
-      {
-        using (FatFileSystem fat = new FatFileSystem(s))
-        {
-          AnalyzeFileSystem(fat, target, pathOffset);
-        }
-      }
-      else if (buf[1080] == 0x53 && buf[1081] == 0xef)
-      {
-        using (ExtFileSystem ext = new ExtFileSystem(s))
-        {
-          AnalyzeFileSystem(ext, target, pathOffset);
+          Console.WriteLine(fs.Description);
+          using (var fsStream = fs.Open(s))
+          {
+            AnalyzeFileSystem(fsStream, target, pathOffset);
+          }
         }
       }
       else
@@ -170,32 +153,40 @@ namespace TrImGen
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
       queue.Enqueue(source.Root);
-      
-      while (queue.Count > 0)
+      using (var md5 = MD5.Create())
       {
-        var cur = queue.Dequeue();
-        foreach (var file in cur.GetFiles())
+        while (queue.Count > 0)
         {
-          if (search.IsMatch(file.FullName))
+          var cur = queue.Dequeue();
+          foreach (var file in cur.GetFiles())
           {
-            try
+            if (search.IsMatch(file.FullName))
             {
-              target.CreateDirectory($"{pathOffset}{file.DirectoryName}");
-              using (var fs = target.OpenFile($"{pathOffset}{file.FullName}", FileMode.Create, FileAccess.Write))
-              using (var ss = file.OpenRead())
+              try
               {
-                ss.CopyTo(fs);
+                target.CreateDirectory($"{pathOffset}{file.DirectoryName}");
+                using (var fs = target.OpenFile($"{pathOffset}{file.FullName}", FileMode.Create, FileAccess.ReadWrite))
+                using (var ss = file.OpenRead())
+                {
+                  ss.CopyTo(fs);
+
+                  ss.Seek(0, SeekOrigin.Begin);
+                  fs.Seek(0, SeekOrigin.Begin);
+                  string status = ss.SequenceEqual(fs) ? "ok" : "error";
+                  
+                  Console.WriteLine($"{file.FullName}: {status}");
+                }
+              }
+              catch (Exception ex)
+              {
+                Console.Error.WriteLine(ex.ToString());
               }
             }
-            catch (Exception ex)
-            {
-              Console.Error.WriteLine(ex.ToString());
-            }
           }
-        }
-        foreach (var dir in cur.GetDirectories())
-        {
-          queue.Enqueue(dir);
+          foreach (var dir in cur.GetDirectories())
+          {
+            queue.Enqueue(dir);
+          }
         }
       }
     }
