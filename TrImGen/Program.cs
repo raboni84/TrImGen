@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using DiscUtils;
-using DiscUtils.Ext;
-using DiscUtils.Fat;
 using DiscUtils.Ntfs;
-using DiscUtils.Ntfs.Internals;
 using DiscUtils.Partitions;
 using DiscUtils.Streams;
+using ExFat;
+using ExFat.DiscUtils;
 using YamlDotNet.Serialization;
 
 namespace TrImGen
@@ -42,30 +40,44 @@ namespace TrImGen
           VirtualDisk disk = GetVirtualDisk(target);
 
           GuidPartitionTable table = GuidPartitionTable.Initialize(disk);
-          int idx = table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
-          var part = table.Partitions[idx];
-          using (var partStream = part.Open())
+          table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
+          
+          var vols = VolumeManager.GetPhysicalVolumes(disk);
+          IFileSystem targetFileSystem = FormatTargetFileSystem(targetName, vols[0]);
+          
+          if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
+              arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
           {
-            NtfsFileSystem targetFileSystem = NtfsFileSystem.Format(partStream, targetName, disk.Geometry, 0, part.SectorCount - 1);
-
-            if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
-                arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
+            using (var ds = new DriveStream(arg))
             {
-              using (var ds = new DriveStream(arg))
-              {
-                DetectFileSystemAndAnalyze(ds, targetFileSystem);
-              }
+              DetectFileSystemAndAnalyze(ds, targetFileSystem);
             }
-            else
+          }
+          else
+          {
+            using (var fs = new FileStream(arg, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
-              using (var fs = new FileStream(arg, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-              {
-                DetectFileSystemAndAnalyze(fs, targetFileSystem);
-              }
+              DetectFileSystemAndAnalyze(fs, targetFileSystem);
             }
           }
         }
       }
+    }
+
+    private static IFileSystem FormatTargetFileSystem(string targetName, PhysicalVolumeInfo vol)
+    {
+      IFileSystem targetFileSystem;
+      if (config.TargetPartitionType == TargetPartitionType.ExFat)
+        targetFileSystem = ExFatFileSystem.Format(vol, new ExFatFormatOptions()
+        {
+          SectorsPerCluster = vol.Length < 268435456L ? 8U : vol.Length < 34359738368L ? 64U : 256U,
+          BytesPerSector = 512
+        }, targetName);
+      else if (config.TargetPartitionType == TargetPartitionType.Ntfs)
+        targetFileSystem = NtfsFileSystem.Format(vol, targetName);
+      else
+        throw new NotSupportedException();
+      return targetFileSystem;
     }
 
     private static string GetTargetName(string arg)
@@ -105,7 +117,7 @@ namespace TrImGen
       else if (config.TargetDiskType == TargetDiskType.Vdi)
         targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vdi";
       else if (config.TargetDiskType == TargetDiskType.Raw)
-        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.raw";
+        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.img";
       else
         throw new NotSupportedException();
       return targetPath;
@@ -145,8 +157,10 @@ namespace TrImGen
             }
           }
         }
-        catch
-        { }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine(ex.ToString());
+        }
       }
     }
 
@@ -155,40 +169,37 @@ namespace TrImGen
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
       queue.Enqueue(source.Root);
-      using (var md5 = MD5.Create())
+      while (queue.Count > 0)
       {
-        while (queue.Count > 0)
+        var cur = queue.Dequeue();
+        foreach (var file in cur.GetFiles())
         {
-          var cur = queue.Dequeue();
-          foreach (var file in cur.GetFiles())
+          if (search.IsMatch(file.FullName))
           {
-            if (search.IsMatch(file.FullName))
+            try
             {
-              try
+              target.CreateDirectory($"{pathOffset}{file.DirectoryName}");
+              using (var fs = target.OpenFile($"{pathOffset}{file.FullName}", FileMode.Create, FileAccess.ReadWrite))
+              using (var ss = file.OpenRead())
               {
-                target.CreateDirectory($"{pathOffset}{file.DirectoryName}");
-                using (var fs = target.OpenFile($"{pathOffset}{file.FullName}", FileMode.Create, FileAccess.ReadWrite))
-                using (var ss = file.OpenRead())
-                {
-                  ss.CopyTo(fs);
+                ss.CopyTo(fs);
 
-                  ss.Seek(0, SeekOrigin.Begin);
-                  fs.Seek(0, SeekOrigin.Begin);
-                  string status = ss.SequenceEqual(fs) ? "ok" : "error";
-                  
-                  Console.WriteLine($"{file.FullName}: {status}");
-                }
-              }
-              catch (Exception ex)
-              {
-                Console.Error.WriteLine(ex.ToString());
+                ss.Seek(0, SeekOrigin.Begin);
+                fs.Seek(0, SeekOrigin.Begin);
+                string status = ss.SequenceEqual(fs) ? "ok" : "error";
+
+                Console.WriteLine($"{file.FullName}: {status}");
               }
             }
+            catch (Exception ex)
+            {
+              Console.Error.WriteLine(ex.ToString());
+            }
           }
-          foreach (var dir in cur.GetDirectories())
-          {
-            queue.Enqueue(dir);
-          }
+        }
+        foreach (var dir in cur.GetDirectories())
+        {
+          queue.Enqueue(dir);
         }
       }
     }

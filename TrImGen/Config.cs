@@ -6,6 +6,8 @@ namespace TrImGen
 
     public TargetDiskType TargetDiskType { get; set; }
 
+    public TargetPartitionType TargetPartitionType { get; set; }
+
     public long TargetDiskSize { get; set; }
 
     public string[] SearchPatterns { get; set; }

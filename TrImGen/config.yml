@@ -1,7 +1,8 @@
 SourceDisks:
 - \\.\PhysicalDrive0
 TargetDiskType: Vhd
-TargetDiskSize: 8796093022208  # 8 TB Disk
+TargetDiskSize: 8796093022208
+TargetPartitionType: ExFat
 SearchPatterns:
 # Windows memory analysis
 - hyberfil.sys$
