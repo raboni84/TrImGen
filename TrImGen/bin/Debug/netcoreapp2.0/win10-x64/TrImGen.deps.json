@@ -1,7 +1,7 @@
 {
   "runtimeTarget": {
     "name": ".NETCoreApp,Version=v2.0/win10-x64",
-    "signature": "2c811c633ec51dac23d0f467116a9566e23e0813"
+    "signature": "2af1b243654d5dc5c9a73f4087c31ec5fdfb2342"
   },
   "compilationOptions": {},
   "targets": {
@@ -10,6 +10,7 @@
       "TrImGen/1.0.0": {
         "dependencies": {
           "DiscUtils": "0.13.0-alpha",
+          "ExFat.DiscUtils": "0.9.16",
           "Microsoft.NETCore.App": "2.0.0",
           "YamlDotNet": "5.0.1"
         },
@@ -290,6 +291,20 @@
         },
         "runtime": {
           "lib/netstandard1.5/DiscUtils.Xva.dll": {}
+        }
+      },
+      "ExFat.Core/0.9.16": {
+        "runtime": {
+          "lib/net40-client/ExFat.Core.dll": {}
+        }
+      },
+      "ExFat.DiscUtils/0.9.16": {
+        "dependencies": {
+          "DiscUtils.Core": "0.13.0-alpha",
+          "ExFat.Core": "0.9.16"
+        },
+        "runtime": {
+          "lib/net40-client/ExFat.DiscUtils.dll": {}
         }
       },
       "Microsoft.NETCore.App/2.0.0": {
@@ -1356,6 +1371,20 @@
       "sha512": "sha512-uIE6eAZsbRo9ZesvG9lZboP7uOCbapEIIH76Ejwty13bVLrSKSmbxSLILQ+Re9AN4s2Oup49fMzyImAaNCnTvA==",
       "path": "discutils.xva/0.13.0-alpha",
       "hashPath": "discutils.xva.0.13.0-alpha.nupkg.sha512"
+    },
+    "ExFat.Core/0.9.16": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dXFNLqXc8V2QS5/sQ0yMmP8h6ssL7m3jt8eznHf+jiEGWf7YDLlZcSQG1xnW6Q0IsbIOygTQ+s6Odd2IVLv/4Q==",
+      "path": "exfat.core/0.9.16",
+      "hashPath": "exfat.core.0.9.16.nupkg.sha512"
+    },
+    "ExFat.DiscUtils/0.9.16": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3cQCu2O9s1dJENp62Yex9O3nmzzrpG0KKVhWT0rAALPc/ImNd2rWGUxprHp/YKjpdoHzbL4UhU1lVo5t58hDTA==",
+      "path": "exfat.discutils/0.9.16",
+      "hashPath": "exfat.discutils.0.9.16.nupkg.sha512"
     },
     "Microsoft.NETCore.App/2.0.0": {
       "type": "package",

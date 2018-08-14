@@ -23,6 +23,7 @@ namespace TrImGen
     static void Main(string[] args)
     {
       DiscUtils.Complete.SetupHelper.SetupComplete();
+      ExFat.DiscUtils.ExFatSetupHelper.SetupFileSystems();
 
       using (var sr = new StreamReader(@".\config.yml"))
       {
