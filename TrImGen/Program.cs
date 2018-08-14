@@ -12,6 +12,7 @@ using DiscUtils.Ntfs;
 using DiscUtils.Ntfs.Internals;
 using DiscUtils.Partitions;
 using DiscUtils.Streams;
+using ExFat.DiscUtils;
 using YamlDotNet.Serialization;
 
 namespace TrImGen
@@ -23,6 +24,7 @@ namespace TrImGen
     static void Main(string[] args)
     {
       DiscUtils.Complete.SetupHelper.SetupComplete();
+      ExFatSetupHelper.SetupFileSystems();
 
       using (var sr = new StreamReader(@".\config.yml"))
       {
