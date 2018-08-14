@@ -24,6 +24,7 @@ namespace TrImGen
     {
       DiscUtils.Complete.SetupHelper.SetupComplete();
       ExFat.DiscUtils.ExFatSetupHelper.SetupFileSystems();
+      Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
       using (var sr = new StreamReader(@".\config.yml"))
       {
