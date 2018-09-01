@@ -41,14 +41,14 @@ namespace TrImGen
 
           GuidPartitionTable table = GuidPartitionTable.Initialize(disk);
           table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
-          
+
           var vols = VolumeManager.GetPhysicalVolumes(disk);
           IFileSystem targetFileSystem = FormatTargetFileSystem(targetName, vols[0]);
-          
+
           if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
               arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
           {
-            using (var ds = new DriveStream(arg))
+            using (var ds = DriveStream.OpenDrive(arg))
             {
               DetectFileSystemAndAnalyze(ds, targetFileSystem);
             }
@@ -178,18 +178,8 @@ namespace TrImGen
           {
             try
             {
-              target.CreateDirectory($"{pathOffset}{file.DirectoryName}");
-              using (var fs = target.OpenFile($"{pathOffset}{file.FullName}", FileMode.Create, FileAccess.ReadWrite))
-              using (var ss = file.OpenRead())
-              {
-                ss.CopyTo(fs);
-
-                ss.Seek(0, SeekOrigin.Begin);
-                fs.Seek(0, SeekOrigin.Begin);
-                string status = ss.SequenceEqual(fs) ? "ok" : "error";
-
-                Console.WriteLine($"{file.FullName}: {status}");
-              }
+              string answer = CopyFileToTarget(target, pathOffset, file);
+              Console.WriteLine($"{file.FullName}: {answer}");
             }
             catch (Exception ex)
             {
@@ -202,6 +192,34 @@ namespace TrImGen
           queue.Enqueue(dir);
         }
       }
+    }
+
+    private static string CopyFileToTarget(IFileSystem target, string pathOffset, DiscFileInfo file)
+    {
+      string sourcePath = $"{pathOffset}{file.DirectoryName}";
+      string targetPath = $"{pathOffset}{file.FullName}";
+
+      target.CreateDirectory(sourcePath);
+      bool done = false;
+      int retry = 0;
+      do
+      {
+        retry++;
+        if (target.FileExists(targetPath))
+          target.DeleteFile(targetPath);
+
+        using (var fs = target.OpenFile(targetPath, FileMode.Create, FileAccess.ReadWrite))
+        using (var ss = file.OpenRead())
+        {
+          ss.CopyTo(fs);
+          ss.Seek(0, SeekOrigin.Begin);
+          fs.Seek(0, SeekOrigin.Begin);
+          done = ss.SequenceEqual(fs);
+        }
+      }
+      while (!done && retry <= config.CopyRetryCount);
+
+      return retry <= config.CopyRetryCount ? "ok" : "error";
     }
   }
 }

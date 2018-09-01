@@ -11,5 +11,7 @@ namespace TrImGen
     public long TargetDiskSize { get; set; }
 
     public string[] SearchPatterns { get; set; }
+
+    public int CopyRetryCount { get; set; }
   }
 }

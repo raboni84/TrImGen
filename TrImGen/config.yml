@@ -3,32 +3,40 @@ SourceDisks:
 TargetDiskType: Vhd
 TargetDiskSize: 8796093022208
 TargetPartitionType: ExFat
+CopyRetryCount: 3
 SearchPatterns:
 # Windows memory analysis
-- hyberfil.sys$
-- pagefile.sys$
-- swapfile.sys$
+- hyberfil\.sys$
+- pagefile\.sys$
+- swapfile\.sys$
 # Windows Registry analysis
-- system32\\.*\\sam$
-- system32\\.*\\sam.log
-- system32\\.*\\security$
-- system32\\.*\\security.log
-- system32\\.*\\software$
-- system32\\.*\\software.log
-- system32\\.*\\system$
-- system32\\.*\\system.log
-- users\\.*\\ntuser.dat$
-- users\\.*\\ntuser.dat.log
+- (?<=[/\\])system32[/\\].*[/\\]sam$  # look before because of yaml syntax
+- (?<=[/\\])system32[/\\].*[/\\]sam\.log
+- (?<=[/\\])system32[/\\].*[/\\]security$
+- (?<=[/\\])system32[/\\].*[/\\]security\.log
+- (?<=[/\\])system32[/\\].*[/\\]software$
+- (?<=[/\\])system32[/\\].*[/\\]software\.log
+- (?<=[/\\])system32[/\\].*[/\\]system$
+- (?<=[/\\])system32[/\\].*[/\\]system\.log
+- users[/\\].*[/\\]ntuser\.dat$
+- users[/\\].*[/\\]ntuser\.dat\.log
 # - users\\.*\\usrclass.dat$     <- part of appdata
 # - users\\.*\\usrclass.dat.log  <- part of appdata
 # Windows log analysis
 - \.evtx$
-- \\logs\\
+- (?<=[/\\])logs[/\\]
+- (?<=[/\\])logfiles[/\\]
 - \.log$
 # Windows user analysis
-- \\users\\.*\\appdata\\
-- \\users\\.*\\recent\\
-- windows\\prefetch\\
-- windows\\appcompat\\
-- thumbs\.db$
-- \$Recycle.Bin\\
+- users[/\\].*[/\\]appdata[/\\]
+- users[/\\].*[/\\]recent[/\\]
+- (?<=[/\\])schedlgu\.txt$
+- (?<=[/\\])prefetch[/\\]
+- (?<=[/\\])inf[/\\]setupapi\.dev\.log$
+- (?<=[/\\])appcompat[/\\]programs[/\\]
+- (?<=[/\\])system32[/\\]drivers[/\\]etc[/\\]hosts$
+- (?<=[/\\])system32[/\\]sru[/\\]
+- (?<=[/\\])microsoft[/\\]search[/\\]data[/\\]applications[/\\]windows[/\\]
+- (?<=[/\\])microsoft[/\\]windows[/\\]start\smenu[/\\]programs[/\\]startup[/\\]
+- (?<=[/\\])thumbs\.db$
+- \$Recycle.Bin[/\\]
