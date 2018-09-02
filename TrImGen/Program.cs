@@ -166,6 +166,7 @@ namespace TrImGen
 
     private static void AnalyzeFileSystem(IFileSystem source, IFileSystem target, string pathOffset = null)
     {
+      EnableAllFilesNtfs(source);
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
       queue.Enqueue(source.Root);
@@ -176,10 +177,11 @@ namespace TrImGen
         {
           if (search.IsMatch(file.FullName))
           {
+            Console.Write($"{file.FullName}: ");
             try
             {
               string answer = CopyFileToTarget(target, pathOffset, file);
-              Console.WriteLine($"{file.FullName}: {answer}");
+              Console.WriteLine($"{answer}");
             }
             catch (Exception ex)
             {
@@ -189,8 +191,23 @@ namespace TrImGen
         }
         foreach (var dir in cur.GetDirectories())
         {
+          if (dir.Name == "." || dir.Name == "..")
+          {
+            continue;
+          }
           queue.Enqueue(dir);
         }
+      }
+    }
+
+    private static void EnableAllFilesNtfs(IFileSystem source)
+    {
+      if (source is NtfsFileSystem)
+      {
+        var ntfs = (NtfsFileSystem)source;
+        ntfs.NtfsOptions.HideHiddenFiles = false;
+        ntfs.NtfsOptions.HideMetafiles = false;
+        ntfs.NtfsOptions.HideSystemFiles = false;
       }
     }
 

@@ -5,38 +5,47 @@ TargetDiskSize: 8796093022208
 TargetPartitionType: ExFat
 CopyRetryCount: 3
 SearchPatterns:
-# Windows memory analysis
-- hyberfil\.sys$
-- pagefile\.sys$
-- swapfile\.sys$
-# Windows Registry analysis
-- (?<=[/\\])system32[/\\].*[/\\]sam$  # look before because of yaml syntax
-- (?<=[/\\])system32[/\\].*[/\\]sam\.log
-- (?<=[/\\])system32[/\\].*[/\\]security$
-- (?<=[/\\])system32[/\\].*[/\\]security\.log
-- (?<=[/\\])system32[/\\].*[/\\]software$
-- (?<=[/\\])system32[/\\].*[/\\]software\.log
-- (?<=[/\\])system32[/\\].*[/\\]system$
-- (?<=[/\\])system32[/\\].*[/\\]system\.log
-- users[/\\].*[/\\]ntuser\.dat$
-- users[/\\].*[/\\]ntuser\.dat\.log
-# - users\\.*\\usrclass.dat$     <- part of appdata
-# - users\\.*\\usrclass.dat.log  <- part of appdata
-# Windows log analysis
+# Meta Files (Win)
+- (?<!\w)\$mft$
+- (?<!\w)\$logfile$
+- (?<!\w)\$recycle.bin[/\\]
+# Memory (Win)
+- (?<!\w)hyberfil\.sys$
+- (?<!\w)pagefile\.sys$
+- (?<!\w)swapfile\.sys$
+# Registry (Win)
+- (?<!\w)system32[/\\].*[/\\]sam$
+- (?<!\w)system32[/\\].*[/\\]sam\.log
+- (?<!\w)system32[/\\].*[/\\]security$
+- (?<!\w)system32[/\\].*[/\\]security\.log
+- (?<!\w)system32[/\\].*[/\\]software$
+- (?<!\w)system32[/\\].*[/\\]software\.log
+- (?<!\w)system32[/\\].*[/\\]system$
+- (?<!\w)system32[/\\].*[/\\]system\.log
+- (?<!\w)users[/\\].*[/\\]ntuser\.dat$
+- (?<!\w)users[/\\].*[/\\]ntuser\.dat\.log
+- (?<!\w)users[/\\].*[/\\]usrclass.dat$
+- (?<!\w)users[/\\].*[/\\]usrclass.dat.log
+# Events (Win)
 - \.evtx$
-- (?<=[/\\])logs[/\\]
-- (?<=[/\\])logfiles[/\\]
+- (?<!\w)logs[/\\]
+- (?<!\w)logfiles[/\\]
 - \.log$
-# Windows user analysis
-- users[/\\].*[/\\]appdata[/\\]
-- users[/\\].*[/\\]recent[/\\]
-- (?<=[/\\])schedlgu\.txt$
-- (?<=[/\\])prefetch[/\\]
-- (?<=[/\\])inf[/\\]setupapi\.dev\.log$
-- (?<=[/\\])appcompat[/\\]programs[/\\]
-- (?<=[/\\])system32[/\\]drivers[/\\]etc[/\\]hosts$
-- (?<=[/\\])system32[/\\]sru[/\\]
-- (?<=[/\\])microsoft[/\\]search[/\\]data[/\\]applications[/\\]windows[/\\]
-- (?<=[/\\])microsoft[/\\]windows[/\\]start\smenu[/\\]programs[/\\]startup[/\\]
-- (?<=[/\\])thumbs\.db$
-- \$Recycle.Bin[/\\]
+# Events (Unix)
+- (?<!\w)var[/\\]log
+- (?<!\w)\.fseventsd
+# User Navigation (Win)
+- (?<!\w)users[/\\].*[/\\]appdata[/\\]
+- (?<!\w)users[/\\].*[/\\]recent[/\\]
+- (?<!\w)schedlgu\.txt$
+- (?<!\w)prefetch[/\\]
+- (?<!\w)inf[/\\]setupapi\.dev\.log$
+- (?<!\w)appcompat[/\\]programs[/\\]
+- (?<!\w)system32[/\\]drivers[/\\]etc[/\\]hosts$
+- (?<!\w)system32[/\\]sru[/\\]
+- (?<!\w)microsoft[/\\]search[/\\]data[/\\]applications[/\\]windows[/\\]
+- (?<!\w)microsoft[/\\]windows[/\\]start\smenu[/\\]programs[/\\]startup[/\\]
+- (?<!\w)thumbs\.db$
+# User Navigation (Unix)
+- (?<!\w)etc[/\\]hosts
+- (?<!\w)system[/\\]library[/\\]startupitems
