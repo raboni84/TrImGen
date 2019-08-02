@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discutils" Version="0.13.0-alpha" />
+    <PackageReference Include="Discutils" Version="0.15.1-ci0002" />
     <PackageReference Include="ExFat.DiscUtils" Version="0.9.16" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
-    <PackageReference Include="YamlDotNet" Version="5.0.1" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.1" />
+    <PackageReference Include="YamlDotNet" Version="6.1.2" />
   </ItemGroup>
 
 </Project>

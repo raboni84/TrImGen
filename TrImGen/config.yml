@@ -8,7 +8,6 @@ SearchPatterns:
 # Meta Files (Win)
 - (?<!\w)\$mft$
 - (?<!\w)\$logfile$
-- (?<!\w)\$recycle.bin[/\\]
 # Memory (Win)
 - (?<!\w)hyberfil\.sys$
 - (?<!\w)pagefile\.sys$
@@ -34,7 +33,8 @@ SearchPatterns:
 # Events (Unix)
 - (?<!\w)var[/\\]log
 - (?<!\w)\.fseventsd
-# User Navigation (Win)
+# User Behaviour (Win)
+- (?<!\w)\$recycle.bin[/\\]
 - (?<!\w)users[/\\].*[/\\]appdata[/\\]
 - (?<!\w)users[/\\].*[/\\]recent[/\\]
 - (?<!\w)schedlgu\.txt$
@@ -46,6 +46,18 @@ SearchPatterns:
 - (?<!\w)microsoft[/\\]search[/\\]data[/\\]applications[/\\]windows[/\\]
 - (?<!\w)microsoft[/\\]windows[/\\]start\smenu[/\\]programs[/\\]startup[/\\]
 - (?<!\w)thumbs\.db$
-# User Navigation (Unix)
+# User Behaviour (Unix)
 - (?<!\w)etc[/\\]hosts
+- (?<!\w)etc[/\\]passwd
+- (?<!\w)etc[/\\]shadow
 - (?<!\w)system[/\\]library[/\\]startupitems
+RegistryHints:
+- (?<!\w)system32[/\\].*[/\\]sam$
+- (?<!\w)system32[/\\].*[/\\]security$
+- (?<!\w)system32[/\\].*[/\\]software$
+- (?<!\w)system32[/\\].*[/\\]system$
+- (?<!\w)users[/\\].*[/\\]ntuser\.dat$
+- (?<!\w)users[/\\].*[/\\]usrclass.dat$
+RegistrySearchPatterns:
+- (?<!\w)Software\\Microsoft\\Windows\\Shell
+- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist

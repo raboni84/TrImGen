@@ -12,6 +12,10 @@ namespace TrImGen
 
     public string[] SearchPatterns { get; set; }
 
+    public string[] RegistryHints { get; set; }
+
+    public string[] RegistrySearchPatterns { get; set; }
+
     public int CopyRetryCount { get; set; }
   }
 }

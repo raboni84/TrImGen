@@ -8,6 +8,7 @@ using DiscUtils;
 using DiscUtils.Ntfs;
 using DiscUtils.Partitions;
 using DiscUtils.Streams;
+using DiscUtils.Registry;
 using ExFat;
 using ExFat.DiscUtils;
 using YamlDotNet.Serialization;
@@ -168,6 +169,7 @@ namespace TrImGen
     {
       EnableAllFilesNtfs(source);
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+      Regex regHints = new Regex(string.Join("|", config.RegistryHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
       queue.Enqueue(source.Root);
       while (queue.Count > 0)
@@ -177,15 +179,31 @@ namespace TrImGen
         {
           if (search.IsMatch(file.FullName))
           {
+            string targetPath = null;
+
             Console.Write($"{file.FullName}: ");
             try
             {
-              string answer = CopyFileToTarget(target, pathOffset, file);
+              string answer = CopyFileToTarget(target, pathOffset, file, out targetPath);
               Console.WriteLine($"{answer}");
             }
             catch (Exception ex)
             {
               Console.Error.WriteLine(ex.ToString());
+            }
+
+            if (targetPath != null && regHints.IsMatch(file.FullName))
+            {
+              Console.Write($"{file.FullName} analyzing registry: ");
+              try
+              {
+                string answer = AnalyzeRegistryFile(target, targetPath);
+                Console.WriteLine($"{answer}");
+              }
+              catch (Exception ex)
+              {
+                Console.Error.WriteLine(ex.ToString());
+              }
             }
           }
         }
@@ -211,10 +229,14 @@ namespace TrImGen
       }
     }
 
-    private static string CopyFileToTarget(IFileSystem target, string pathOffset, DiscFileInfo file)
+    private static string CopyFileToTarget(IFileSystem target, string pathOffset, DiscFileInfo file, out string targetPath)
     {
       string sourcePath = $"{pathOffset}{file.DirectoryName}";
-      string targetPath = $"{pathOffset}{file.FullName}";
+      targetPath = $"{pathOffset}{file.FullName}";
+      if (target.FileExists(targetPath))
+      {
+        targetPath = $"{targetPath}_{DateTimeOffset.Now.ToUnixTimeSeconds()}";
+      }
 
       target.CreateDirectory(sourcePath);
       bool done = false;
@@ -222,9 +244,6 @@ namespace TrImGen
       do
       {
         retry++;
-        if (target.FileExists(targetPath))
-          target.DeleteFile(targetPath);
-
         using (var fs = target.OpenFile(targetPath, FileMode.Create, FileAccess.ReadWrite))
         using (var ss = file.OpenRead())
         {
@@ -232,11 +251,66 @@ namespace TrImGen
           ss.Seek(0, SeekOrigin.Begin);
           fs.Seek(0, SeekOrigin.Begin);
           done = ss.SequenceEqual(fs);
+          target.SetAttributes(targetPath, file.FileSystem.GetAttributes(file.FullName));
         }
       }
       while (!done && retry <= config.CopyRetryCount);
 
       return retry <= config.CopyRetryCount ? "ok" : "error";
+    }
+
+    private static string AnalyzeRegistryFile(IFileSystem target, string targetPath)
+    {
+      Regex search = new Regex(string.Join("|", config.RegistrySearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+      
+      using (var ss = target.OpenFile(targetPath, FileMode.Create, FileAccess.Read))
+      using (var hive = new RegistryHive(ss))
+      using (var fs = target.OpenFile($"{targetPath}_RegHive.txt", FileMode.Create, FileAccess.Write))
+      using (var sw = new StreamWriter(fs))
+      {
+        Queue<RegistryKey> queue = new Queue<RegistryKey>();
+        queue.Enqueue(hive.Root);
+        while (queue.Count > 0)
+        {
+          var cur = queue.Dequeue();
+          try
+          {
+            if (search.IsMatch(cur.Name))
+            {
+              sw.WriteLine(cur.Name);
+              foreach (var valname in cur.GetValueNames())
+              {
+                object val = cur.GetValue(valname);
+                if (val is byte[])
+                {
+                  val = Convert.ToBase64String((byte[])val, Base64FormattingOptions.None);
+                }
+                sw.WriteLine($"\t{valname} = {val} [{cur.GetValueType(valname)}]");
+              }
+            }
+          }
+          catch (Exception ex)
+          {
+            sw.WriteLine($"\tError reading values: {ex.Message}");
+          }
+          
+          sw.Flush();
+
+          try
+          {
+            foreach (var sub in cur.SubKeys)
+            {
+              queue.Enqueue(sub);
+            }
+          }
+          catch (Exception)
+          {
+            // silent ignore
+          }
+        }
+      }
+      
+      return "ok";
     }
   }
 }
