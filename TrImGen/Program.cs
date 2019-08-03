@@ -39,10 +39,10 @@ namespace TrImGen
         using (var target = new FileStream(targetPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
         {
           VirtualDisk disk = GetVirtualDisk(target);
-          
+
           GuidPartitionTable table = GuidPartitionTable.Initialize(disk);
           table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
-          
+
           var vols = VolumeManager.GetPhysicalVolumes(disk);
           IFileSystem targetFileSystem = FormatTargetFileSystem(targetName, vols[0]);
 
@@ -87,7 +87,8 @@ namespace TrImGen
           arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
       {
         string chars = new string(Path.GetInvalidFileNameChars());
-        string pattern = $"[{Regex.Escape(chars)}]";
+        string chars2 = new string(Path.GetInvalidPathChars());
+        string pattern = $"[{Regex.Escape(chars)}{Regex.Escape(chars2)}]";
         return Regex.Replace(arg.Substring(4), pattern, "_");
       }
       else
@@ -152,7 +153,37 @@ namespace TrImGen
       {
         try
         {
-          using (VirtualDisk disk = new DiscUtils.Raw.Disk(s, Ownership.None))
+          VirtualDisk disk = null;
+          try
+          {
+            disk = new DiscUtils.Vhd.Disk(s, Ownership.None);
+          }
+          catch (Exception)
+          {
+            try
+            {
+              disk = new DiscUtils.Vhdx.Disk(s, Ownership.None);
+            }
+            catch (Exception)
+            {
+              try
+              {
+                disk = new DiscUtils.Vdi.Disk(s, Ownership.None);
+              }
+              catch (Exception)
+              {
+                try
+                {
+                  disk = new DiscUtils.Raw.Disk(s, Ownership.None);
+                }
+                catch (Exception)
+                {
+                  throw new NotSupportedException("File or disk type not supported.");
+                }
+              }
+            }
+          }
+          using (disk)
           {
             if (disk.IsPartitioned)
             {
@@ -272,7 +303,7 @@ namespace TrImGen
     private static string AnalyzeRegistryFile(IFileSystem target, string targetPath)
     {
       Regex search = new Regex(string.Join("|", config.RegistrySearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-      
+
       using (var ss = target.OpenFile(targetPath, FileMode.Create, FileAccess.Read))
       using (var hive = new RegistryHive(ss))
       using (var fs = target.OpenFile($"{targetPath}_RegHive.txt", FileMode.Create, FileAccess.Write))
@@ -303,7 +334,7 @@ namespace TrImGen
           {
             sw.WriteLine($"\tError reading values: {ex.Message}");
           }
-          
+
           sw.Flush();
 
           try
@@ -319,7 +350,7 @@ namespace TrImGen
           }
         }
       }
-      
+
       return "ok";
     }
   }
