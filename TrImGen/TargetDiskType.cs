@@ -4,6 +4,7 @@ namespace TrImGen
   {
     Raw,
     Vhd,
+    Vhdx,
     Vdi
   }
 }

@@ -36,13 +36,13 @@ namespace TrImGen
         string targetName = GetTargetName(arg);
         string targetPath = GetTargetPath(targetName);
 
-        using (var target = new FileStream(targetPath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+        using (var target = new FileStream(targetPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
         {
           VirtualDisk disk = GetVirtualDisk(target);
-
+          
           GuidPartitionTable table = GuidPartitionTable.Initialize(disk);
           table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
-
+          
           var vols = VolumeManager.GetPhysicalVolumes(disk);
           IFileSystem targetFileSystem = FormatTargetFileSystem(targetName, vols[0]);
 
@@ -98,13 +98,21 @@ namespace TrImGen
 
     private static VirtualDisk GetVirtualDisk(FileStream target)
     {
+      long size = config.TargetDiskSize;
+      long miss = size % 1024;
+      if (miss > 0)
+      {
+        size = size + 1024 - miss;
+      }
       VirtualDisk disk = null;
       if (config.TargetDiskType == TargetDiskType.Vhd)
-        disk = DiscUtils.Vhd.Disk.InitializeDynamic(target, Ownership.None, config.TargetDiskSize);
+        disk = DiscUtils.Vhd.Disk.InitializeDynamic(target, Ownership.None, size);
+      else if (config.TargetDiskType == TargetDiskType.Vhdx)
+        disk = DiscUtils.Vhdx.Disk.InitializeDynamic(target, Ownership.None, size);
       else if (config.TargetDiskType == TargetDiskType.Vdi)
-        disk = DiscUtils.Vdi.Disk.InitializeDynamic(target, Ownership.None, config.TargetDiskSize);
+        disk = DiscUtils.Vdi.Disk.InitializeDynamic(target, Ownership.None, size);
       else if (config.TargetDiskType == TargetDiskType.Raw)
-        disk = DiscUtils.Raw.Disk.Initialize(target, Ownership.None, config.TargetDiskSize);
+        disk = DiscUtils.Raw.Disk.Initialize(target, Ownership.None, size);
       else
         throw new NotSupportedException();
       return disk;
@@ -115,6 +123,8 @@ namespace TrImGen
       string targetPath = null;
       if (config.TargetDiskType == TargetDiskType.Vhd)
         targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhd";
+      else if (config.TargetDiskType == TargetDiskType.Vhdx)
+        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhdx";
       else if (config.TargetDiskType == TargetDiskType.Vdi)
         targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vdi";
       else if (config.TargetDiskType == TargetDiskType.Raw)
