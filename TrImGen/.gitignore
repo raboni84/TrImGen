@@ -3,3 +3,7 @@ obj/
 *.7z
 *.zip
 *.exe
+*.vhd
+*.vhdx
+*.vdi
+*.img

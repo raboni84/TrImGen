@@ -1,27 +1,22 @@
 @RD /S /Q "bin\Release"
 
-mkdir "bin\Release\netcoreapp2.0\win-x86\packed"
-dotnet-warp -r win-x86 -o "bin\Release\netcoreapp2.0\win-x86\packed\TrImGen.exe"
-copy config.yml "bin\Release\netcoreapp2.0\win-x86\packed\config.yml"
-copy "..\LICENSE" "bin\Release\netcoreapp2.0\win-x86\packed\LICENSE"
-copy "..\README.md" "bin\Release\netcoreapp2.0\win-x86\packed\README.md"
-7z a "TrImGen-win-x86.7z" ".\bin\Release\netcoreapp2.0\win-x86\packed\*"
+set rid[0]=win-x64
+set rid[1]=win-x86
+set rid[2]=win-arm
+set rid[3]=win-arm64
+set rid[4]=linux-x64
+set rid[5]=linux-musl-x64
+set rid[6]=linux-arm
+set rid[7]=osx-x64
 
-mkdir "bin\Release\netcoreapp2.0\win-x64\packed"
-dotnet-warp -r win-x64 -o "bin\Release\netcoreapp2.0\win-x64\packed\TrImGen.exe"
-copy config.yml "bin\Release\netcoreapp2.0\win-x64\packed\config.yml"
-copy "..\LICENSE" "bin\Release\netcoreapp2.0\win-x64\packed\LICENSE"
-copy "..\README.md" "bin\Release\netcoreapp2.0\win-x64\packed\README.md"
-7z a "TrImGen-win-x64.7z" ".\bin\Release\netcoreapp2.0\win-x64\packed\*"
-
-dotnet publish -r linux-x64 -c Release
-copy config.yml "bin\Release\netcoreapp2.0\linux-x64\publish\config.yml"
-copy "..\LICENSE" "bin\Release\netcoreapp2.0\linux-x64\publish\LICENSE"
-copy "..\README.md" "bin\Release\netcoreapp2.0\linux-x64\publish\README.md"
-7z a "TrImGen-linux-x64.7z" ".\bin\Release\netcoreapp2.0\linux-x64\publish\*"
-
-dotnet publish -r osx-x64 -c Release
-copy config.yml "bin\Release\netcoreapp2.0\osx-x64\publish\config.yml"
-copy "..\LICENSE" "bin\Release\netcoreapp2.0\osx-x64\publish\LICENSE"
-copy "..\README.md" "bin\Release\netcoreapp2.0\osx-x64\publish\README.md"
-7z a "TrImGen-osx-x64.7z" ".\bin\Release\netcoreapp2.0\osx-x64\publish\*"
+set "x=0"
+:SymLoop
+if defined rid[%x%] (
+  call dotnet publish -r %%rid[%x%]%% -c Release
+  call copy config.yml bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\config.yml
+  call copy ..\LICENSE bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\LICENSE
+  call copy ..\README.md bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\README.md
+  call 7z a TrImGen-%%rid[%x%]%%.7z .\bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\*
+  set /a "x+=1"
+  GOTO :SymLoop
+)
