@@ -51,6 +51,10 @@ SearchPatterns:
 - (?<!\w)etc[/\\]passwd
 - (?<!\w)etc[/\\]shadow
 - (?<!\w)system[/\\]library[/\\]startupitems
+EventHints:
+- \.evtx$
+EventSearchPatterns:
+- .+
 RegistryHints:
 - (?<!\w)system32[/\\].*[/\\]sam$
 - (?<!\w)system32[/\\].*[/\\]security$

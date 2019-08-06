@@ -12,6 +12,10 @@ namespace TrImGen
 
     public string[] SearchPatterns { get; set; }
 
+    public string[] EventHints { get; set; }
+
+    public string[] EventSearchPatterns { get; set; }
+
     public string[] RegistryHints { get; set; }
 
     public string[] RegistrySearchPatterns { get; set; }

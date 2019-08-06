@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -210,6 +211,7 @@ namespace TrImGen
     {
       EnableAllFilesNtfs(source);
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+      Regex evtxHints = new Regex(string.Join("|", config.EventHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Regex regHints = new Regex(string.Join("|", config.RegistryHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
       queue.Enqueue(source.Root);
@@ -231,6 +233,20 @@ namespace TrImGen
             catch (Exception ex)
             {
               Console.Error.WriteLine(ex.ToString());
+            }
+
+            if (targetPath != null && evtxHints.IsMatch(file.FullName))
+            {
+              Console.Write($"{file.FullName} analyzing evtx file: ");
+              try
+              {
+                string answer = AnalyzeEventFile(target, targetPath);
+                Console.WriteLine($"{answer}");
+              }
+              catch (Exception ex)
+              {
+                Console.Error.WriteLine(ex.ToString());
+              }
             }
 
             if (targetPath != null && regHints.IsMatch(file.FullName))
@@ -298,6 +314,45 @@ namespace TrImGen
       while (!done && retry <= config.CopyRetryCount);
 
       return retry <= config.CopyRetryCount ? "ok" : "error";
+    }
+
+    private static string AnalyzeEventFile(IFileSystem target, string targetPath)
+    {
+      Regex search = new Regex(string.Join("|", config.EventSearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+      
+      Directory.Delete("tmp", true);
+      Directory.CreateDirectory("tmp");
+
+      using (var ss = target.OpenFile(targetPath, FileMode.Create, FileAccess.Read))
+      using (var fs = new FileStream(@"tmp\eventlog", FileMode.Create, FileAccess.Write, FileShare.None))
+      {
+        ss.CopyTo(fs);
+      }
+      
+      using (var rd = new EventLogReader(@"tmp\eventlog", PathType.FilePath))
+      using (var fs = target.OpenFile($"{targetPath}_EvtxLog.txt", FileMode.Create, FileAccess.Write))
+      using (var sw = new StreamWriter(fs))
+      {
+        EventRecord evt;
+        while ((evt = rd.ReadEvent()) != null)
+        {
+          try
+          {
+            string evtstr = evt.ToXml();
+            if (search.IsMatch(evtstr))
+            {
+              sw.WriteLine(evtstr);
+            }
+          }
+          catch (Exception)
+          {
+            // silently ignore
+          }
+        }
+      }
+
+      Directory.Delete("tmp", true);
+      return "ok";
     }
 
     private static string AnalyzeRegistryFile(IFileSystem target, string targetPath)
