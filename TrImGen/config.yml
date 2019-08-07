@@ -64,31 +64,31 @@ RegistryHints:
 - (?<!\w)users[/\\].*[/\\]usrclass\.dat$
 RegistrySearchPatterns:
 # Basic System Information
-- (?<!\w)Control\\Computername
-- (?<!\w)Software\\Microsoft\\Windows NT\\CurrentVersion
-- (?<!\w)Control\\TimeZoneInformation
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall
-- (?<!\w)Enum\\USBSTOR
-- (?<!\w)System\\MountedDevices
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2
-- (?<!\w)Services\\Tcpip\\Parameters\\Interfaces
-- (?<!\w)Software\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\Profiles
-- (?<!\w)Services\\LanmanServer\\Shares
-- (?<!\w)Services\\SharedAccess\\Parameters\\FirewallPolicy
+- (?<!\w)Control[/\\]Computername
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows NT[/\\]CurrentVersion
+- (?<!\w)Control[/\\]TimeZoneInformation
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Uninstall
+- (?<!\w)Enum[/\\]USBSTOR
+- (?<!\w)System[/\\]MountedDevices
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Explorer[/\\]MountPoints2
+- (?<!\w)Services[/\\]Tcpip[/\\]Parameters[/\\]Interfaces
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows NT[/\\]CurrentVersion[/\\]NetworkList[/\\]Profiles
+- (?<!\w)Services[/\\]LanmanServer[/\\]Shares
+- (?<!\w)Services[/\\]SharedAccess[/\\]Parameters[/\\]FirewallPolicy
 # User and Security Information
-- (?<!\w)Security\\Policy
-- (?<!\w)Software\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Group Policy\\.*\\GroupMembership
-- (?<!\w)Control\\Session Manager\\AppCompatCache\\AppCompatCache
-- (?<!\w)Control\\Session Manager\\AppCompatibility\\AppCompatCache
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Run
-- (?<!\w)Software\\Microsoft\\ActiveSetup\\Installed Components
-- (?<!\w)Control\\Lsa\\Authentication Packages
-- (?<!\w)Control\\Lsa\\Notification Packages
-- (?<!\w)Control\\Lsa\\Security Packages
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Winlogon
-- (?<!\w)Software\\Microsoft\\Windows\\Shell
-- (?<!\w)Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\
-- (?<!\w)Software\\Microsoft\\Internet Explorer\\Typed
-- (?<!\w)Software\\Microsoft\\Terminal Server Client
+- (?<!\w)Security[/\\]Policy
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows NT[/\\]CurrentVersion[/\\]ProfileList
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Group Policy[/\\].*[/\\]GroupMembership
+- (?<!\w)Control[/\\]Session Manager[/\\]AppCompatCache[/\\]AppCompatCache
+- (?<!\w)Control[/\\]Session Manager[/\\]AppCompatibility[/\\]AppCompatCache
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Run
+- (?<!\w)Software[/\\]Microsoft[/\\]ActiveSetup[/\\]Installed Components
+- (?<!\w)Control[/\\]Lsa[/\\]Authentication Packages
+- (?<!\w)Control[/\\]Lsa[/\\]Notification Packages
+- (?<!\w)Control[/\\]Lsa[/\\]Security Packages
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Explorer[/\\]Browser Helper Objects
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Winlogon
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]Shell
+- (?<!\w)Software[/\\]Microsoft[/\\]Windows[/\\]CurrentVersion[/\\]Explorer[/\\]
+- (?<!\w)Software[/\\]Microsoft[/\\]Internet Explorer[/\\]Typed
+- (?<!\w)Software[/\\]Microsoft[/\\]Terminal Server Client

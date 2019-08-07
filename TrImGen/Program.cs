@@ -26,7 +26,7 @@ namespace TrImGen
       ExFat.DiscUtils.ExFatSetupHelper.SetupFileSystems();
       Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-      using (var sr = new StreamReader(@".\config.yml"))
+      using (var sr = new StreamReader(@"config.yml"))
       {
         var yaml = new Deserializer();
         config = yaml.Deserialize<Config>(sr);
@@ -124,13 +124,13 @@ namespace TrImGen
     {
       string targetPath = null;
       if (config.TargetDiskType == TargetDiskType.Vhd)
-        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhd";
+        targetPath = $"{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhd";
       else if (config.TargetDiskType == TargetDiskType.Vhdx)
-        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhdx";
+        targetPath = $"{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vhdx";
       else if (config.TargetDiskType == TargetDiskType.Vdi)
-        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vdi";
+        targetPath = $"{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.vdi";
       else if (config.TargetDiskType == TargetDiskType.Raw)
-        targetPath = $".\\{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.img";
+        targetPath = $"{targetName}_{DateTimeOffset.Now.ToUnixTimeSeconds()}.img";
       else
         throw new NotSupportedException();
       return targetPath;
@@ -324,12 +324,12 @@ namespace TrImGen
       Directory.CreateDirectory("tmp");
 
       using (var ss = target.OpenFile(targetPath, FileMode.Create, FileAccess.Read))
-      using (var fs = new FileStream(@"tmp\eventlog", FileMode.Create, FileAccess.Write, FileShare.None))
+      using (var fs = new FileStream($"tmp{Path.DirectorySeparatorChar}eventlog", FileMode.Create, FileAccess.Write, FileShare.None))
       {
         ss.CopyTo(fs);
       }
       
-      using (var rd = new EventLogReader(@"tmp\eventlog", PathType.FilePath))
+      using (var rd = new EventLogReader($"tmp{Path.DirectorySeparatorChar}eventlog", PathType.FilePath))
       using (var fs = target.OpenFile($"{targetPath}_EvtxLog.txt", FileMode.Create, FileAccess.Write))
       using (var sw = new StreamWriter(fs))
       {
