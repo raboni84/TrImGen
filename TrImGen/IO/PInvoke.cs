@@ -7,10 +7,13 @@ namespace TrImGen.IO
 {
   public static class PInvoke
   {
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32", SetLastError = true)]
     static extern bool CloseHandle(SafeFileHandle handle);
 
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    [DllImport("libc", SetLastError = true)]
+    static extern int close(SafeFileHandle handle);
+
+    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
     static extern SafeFileHandle CreateFile(
       string lpFileName,
       uint dwDesiredAccess,
@@ -19,8 +22,11 @@ namespace TrImGen.IO
       uint dwCreationDisposition,
       uint dwFlagsAndAttributes,
       IntPtr hTemplateFile);
-    
-    [DllImport("kernel32.dll")]
+
+    [DllImport("libc", SetLastError = true)]
+    static extern SafeFileHandle open(string pathname, uint flags);
+
+    [DllImport("kernel32", SetLastError = true)]
     static extern unsafe bool ReadFile(
       SafeFileHandle hFile,
       byte* lpBuffer,
@@ -28,14 +34,20 @@ namespace TrImGen.IO
       ref int lpNumberOfBytesRead,
       IntPtr lpOverlapped);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("libc", SetLastError = true)]
+    static extern unsafe int read(SafeFileHandle handle, byte* buf, int n);
+
+    [DllImport("kernel32", SetLastError = true)]
     static extern bool SetFilePointerEx(
       SafeFileHandle hFile,
       long liDistanceToMove,
       ref long lpNewFilePointer,
       uint dwMoveMethod);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("libc", SetLastError = true)]
+    extern public static long lseek(SafeFileHandle handle, long offset, uint whence);
+
+    [DllImport("kernel32", SetLastError = true)]
     static extern unsafe bool DeviceIoControl(
       SafeFileHandle hDevice,
       uint dwIoControlCode,
@@ -49,13 +61,13 @@ namespace TrImGen.IO
     static readonly uint Win_DiskGetLength = 0x7405c;
 
     static readonly uint Win_DiskGetDriveGeometry = 0x70000;
-    
+
     static readonly uint GenericRead = 0x80000000;
-    
+
     static readonly uint ReadWrite = 0x00000001 | 0x00000002;
-    
+
     static readonly uint OpenExisting = 3;
-    
+
     static readonly uint DeviceNoBufferingRandomAccess = 0x00000040 | 0x20000000 | 0x10000000;
 
     public static bool IsLinux
@@ -69,18 +81,26 @@ namespace TrImGen.IO
 
     public static SafeFileHandle CreateDriveHandle(string drivePath)
     {
-      SafeFileHandle hDrive = CreateFile(
-        drivePath,
-        GenericRead,
-        ReadWrite,
-        IntPtr.Zero,
-        OpenExisting,
-        DeviceNoBufferingRandomAccess,
-        IntPtr.Zero);
-      
+      SafeFileHandle hDrive;
+      if (IsLinux)
+      {
+        hDrive = open(drivePath, 0);
+      }
+      else
+      {
+        hDrive = CreateFile(
+                drivePath,
+                GenericRead,
+                ReadWrite,
+                IntPtr.Zero,
+                OpenExisting,
+                DeviceNoBufferingRandomAccess,
+                IntPtr.Zero);
+      }
+
       if (hDrive.IsInvalid)
         throw new InvalidOperationException(drivePath);
-      
+
       return hDrive;
     }
 
@@ -91,7 +111,15 @@ namespace TrImGen.IO
       bool success;
       fixed (byte* pinned = buffer)
       {
-        success = ReadFile(ds.Handle, pinned, sectorBoundary, ref bytesRead, IntPtr.Zero);
+        if (IsLinux)
+        {
+          bytesRead = read(ds.Handle, pinned, sectorBoundary);
+          success = true;
+        }
+        else
+        {
+          success = ReadFile(ds.Handle, pinned, sectorBoundary, ref bytesRead, IntPtr.Zero);
+        }
       }
       position += bytesRead;
       return success;
@@ -111,14 +139,33 @@ namespace TrImGen.IO
       {
         position = (long)((ds.Length - 1 - offset) / ds.SectorSize) * ds.SectorSize;
       }
-      return SetFilePointerEx(ds.Handle, position, ref position, 0);
+      bool success;
+      if (IsLinux)
+      {
+        position = lseek(ds.Handle, position, 0);
+        success = true;
+      }
+      else
+      {
+        success = SetFilePointerEx(ds.Handle, position, ref position, 0);
+      }
+      return success;
     }
 
     public static void ReleaseDriveHandle(SafeFileHandle handle)
     {
       if (handle != null && !handle.IsInvalid)
       {
-        handle.Dispose();
+        if (IsLinux)
+        {
+          close(handle);
+          handle.Dispose();
+        }
+        else
+        {
+          CloseHandle(handle);
+          handle.Dispose();
+        }
         handle.SetHandleAsInvalid();
       }
     }
