@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace TrImGen
+namespace TrImGen.IO
 {
   public static class PInvoke
   {
@@ -109,7 +109,7 @@ namespace TrImGen
       }
       else
       {
-        position = (long)((ds.Length - offset) / ds.SectorSize) * ds.SectorSize;
+        position = (long)((ds.Length - 1 - offset) / ds.SectorSize) * ds.SectorSize;
       }
       return SetFilePointerEx(ds.Handle, position, ref position, 0);
     }

@@ -7,12 +7,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using DiscUtils;
 using DiscUtils.Ntfs;
-using DiscUtils.Partitions;
 using DiscUtils.Streams;
 using DiscUtils.Registry;
-using ExFat;
-using ExFat.DiscUtils;
 using YamlDotNet.Serialization;
+using TrImGen.IO;
+using System.Threading.Tasks;
 
 namespace TrImGen
 {
@@ -39,16 +38,17 @@ namespace TrImGen
 
         using (var target = new FileStream(targetPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
         {
-          VirtualDisk disk = GetVirtualDisk(target);
+          VirtualDisk disk = TargetHelper.InitializeVirtualDisk(target, config.TargetDiskSize, config.TargetDiskType);
 
-          GuidPartitionTable table = GuidPartitionTable.Initialize(disk);
-          table.Create(table.FirstUsableSector, table.LastUsableSector, GuidPartitionTypes.WindowsBasicData, 0, "DATA");
+          IFileSystem targetFileSystem = TargetHelper.InitializeFirstPartition(disk, config.TargetPartitionType);
 
-          var vols = VolumeManager.GetPhysicalVolumes(disk);
-          IFileSystem targetFileSystem = FormatTargetFileSystem(targetName, vols[0]);
-
-          if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
-              arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
+          if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"/dev/fd", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"/dev/hd", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"/dev/sd", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"/dev/sg", StringComparison.OrdinalIgnoreCase) == 0
+           || arg.IndexOf(@"/dev/sr", StringComparison.OrdinalIgnoreCase) == 0)
           {
             using (var ds = DriveStream.OpenDrive(arg))
             {
@@ -66,22 +66,6 @@ namespace TrImGen
       }
     }
 
-    private static IFileSystem FormatTargetFileSystem(string targetName, PhysicalVolumeInfo vol)
-    {
-      IFileSystem targetFileSystem;
-      if (config.TargetPartitionType == TargetPartitionType.ExFat)
-        targetFileSystem = ExFatFileSystem.Format(vol, new ExFatFormatOptions()
-        {
-          SectorsPerCluster = vol.Length < 268435456L ? 8U : vol.Length < 34359738368L ? 64U : 256U,
-          BytesPerSector = 512
-        }, targetName);
-      else if (config.TargetPartitionType == TargetPartitionType.Ntfs)
-        targetFileSystem = NtfsFileSystem.Format(vol, targetName);
-      else
-        throw new NotSupportedException();
-      return targetFileSystem;
-    }
-
     private static string GetTargetName(string arg)
     {
       if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
@@ -96,28 +80,6 @@ namespace TrImGen
       {
         return Path.GetFileNameWithoutExtension(arg);
       }
-    }
-
-    private static VirtualDisk GetVirtualDisk(FileStream target)
-    {
-      long size = config.TargetDiskSize;
-      long miss = size % 1024;
-      if (miss > 0)
-      {
-        size = size + 1024 - miss;
-      }
-      VirtualDisk disk = null;
-      if (config.TargetDiskType == TargetDiskType.Vhd)
-        disk = DiscUtils.Vhd.Disk.InitializeDynamic(target, Ownership.None, size);
-      else if (config.TargetDiskType == TargetDiskType.Vhdx)
-        disk = DiscUtils.Vhdx.Disk.InitializeDynamic(target, Ownership.None, size);
-      else if (config.TargetDiskType == TargetDiskType.Vdi)
-        disk = DiscUtils.Vdi.Disk.InitializeDynamic(target, Ownership.None, size);
-      else if (config.TargetDiskType == TargetDiskType.Raw)
-        disk = DiscUtils.Raw.Disk.Initialize(target, Ownership.None, size);
-      else
-        throw new NotSupportedException();
-      return disk;
     }
 
     private static string GetTargetPath(string targetName)
@@ -154,49 +116,21 @@ namespace TrImGen
       {
         try
         {
-          VirtualDisk disk = null;
-          try
-          {
-            disk = new DiscUtils.Vhd.Disk(s, Ownership.None);
-          }
-          catch (Exception)
-          {
-            try
-            {
-              disk = new DiscUtils.Vhdx.Disk(s, Ownership.None);
-            }
-            catch (Exception)
-            {
-              try
-              {
-                disk = new DiscUtils.Vdi.Disk(s, Ownership.None);
-              }
-              catch (Exception)
-              {
-                try
-                {
-                  disk = new DiscUtils.Raw.Disk(s, Ownership.None);
-                }
-                catch (Exception)
-                {
-                  throw new NotSupportedException("File or disk type not supported.");
-                }
-              }
-            }
-          }
-          using (disk)
+          using (VirtualDisk disk = TryDifferentDiskTypes(s))
           {
             if (disk.IsPartitioned)
             {
+              Console.WriteLine($"Disk has {disk.Partitions.Count} partitions");
               int partIdx = 0;
               foreach (var part in disk.Partitions.Partitions)
               {
                 Console.WriteLine($"Partition {part.FirstSector}-{part.LastSector}");
                 using (var sub = part.Open())
                 {
-                  DetectFileSystemAndAnalyze(sub, target, $"part{partIdx++}\\");
+                  DetectFileSystemAndAnalyze(sub, target, $"part{partIdx++}{Path.DirectorySeparatorChar}");
                 }
               }
+              return;
             }
           }
         }
@@ -207,70 +141,101 @@ namespace TrImGen
       }
     }
 
+    private static VirtualDisk TryDifferentDiskTypes(Stream s)
+    {
+      VirtualDisk disk;
+      try
+      {
+        disk = new DiscUtils.Vhd.Disk(s, Ownership.None);
+      }
+      catch (Exception)
+      {
+        try
+        {
+          disk = new DiscUtils.Vhdx.Disk(s, Ownership.None);
+        }
+        catch (Exception)
+        {
+          try
+          {
+            disk = new DiscUtils.Vdi.Disk(s, Ownership.None);
+          }
+          catch (Exception)
+          {
+            try
+            {
+              disk = new DiscUtils.Raw.Disk(s, Ownership.None);
+            }
+            catch (Exception)
+            {
+              throw new NotSupportedException("File or disk type not supported.");
+            }
+          }
+        }
+      }
+      return disk;
+    }
+
     private static void AnalyzeFileSystem(IFileSystem source, IFileSystem target, string pathOffset = null)
     {
       EnableAllFilesNtfs(source);
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Regex evtxHints = new Regex(string.Join("|", config.EventHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Regex regHints = new Regex(string.Join("|", config.RegistryHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-      Queue<DiscDirectoryInfo> queue = new Queue<DiscDirectoryInfo>();
-      queue.Enqueue(source.Root);
-      while (queue.Count > 0)
+      using (var fs = new FileSystemEnumerator(source, search))
       {
-        var cur = queue.Dequeue();
-        foreach (var file in cur.GetFiles())
+        while (fs.MoveNext())
         {
-          if (search.IsMatch(file.FullName))
+          var file = fs.Current;
+          string targetPath = null;
+
+          Console.Write($"{file.FullName}: ");
+          try
           {
-            string targetPath = null;
-
-            Console.Write($"{file.FullName}: ");
-            try
-            {
-              string answer = CopyFileToTarget(target, pathOffset, file, out targetPath);
-              Console.WriteLine($"{answer}");
-            }
-            catch (Exception ex)
-            {
-              Console.Error.WriteLine(ex.ToString());
-            }
-
-            if (targetPath != null && evtxHints.IsMatch(file.FullName))
-            {
-              Console.Write($"{file.FullName} analyzing evtx file: ");
-              try
-              {
-                string answer = AnalyzeEventFile(target, targetPath);
-                Console.WriteLine($"{answer}");
-              }
-              catch (Exception ex)
-              {
-                Console.Error.WriteLine(ex.ToString());
-              }
-            }
-
-            if (targetPath != null && regHints.IsMatch(file.FullName))
-            {
-              Console.Write($"{file.FullName} analyzing registry: ");
-              try
-              {
-                string answer = AnalyzeRegistryFile(target, targetPath);
-                Console.WriteLine($"{answer}");
-              }
-              catch (Exception ex)
-              {
-                Console.Error.WriteLine(ex.ToString());
-              }
-            }
+            string answer = CopyFileToTarget(target, pathOffset, file, out targetPath);
+            Console.WriteLine($"{answer}");
           }
+          catch (Exception ex)
+          {
+            Console.Error.WriteLine(ex.ToString());
+          }
+
+          CheckEvtxHint(target, evtxHints, file, targetPath);
+          CheckRegHint(target, regHints, file, targetPath);
         }
-        foreach (var dir in cur.GetDirectories())
+      }
+    }
+
+    private static void CheckRegHint(IFileSystem target, Regex regHints, DiscFileInfo file, string targetPath)
+    {
+      if (targetPath != null && regHints.IsMatch(file.FullName))
+      {
+        Console.Write($"{file.FullName} analyzing registry: ");
+        try
         {
-          if (dir.Name == "." || dir.Name == "..")
-          {
-            continue;
-          }
-          queue.Enqueue(dir);
+          string answer = AnalyzeRegistryFile(target, targetPath);
+          Console.WriteLine($"{answer}");
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine(ex.ToString());
+        }
+      }
+    }
+
+    private static void CheckEvtxHint(IFileSystem target, Regex evtxHints, DiscFileInfo file, string targetPath)
+    {
+      if (targetPath != null && evtxHints.IsMatch(file.FullName))
+      {
+        Console.Write($"{file.FullName} analyzing evtx file: ");
+        try
+        {
+          string answer = AnalyzeEventFile(target, targetPath);
+          Console.WriteLine($"{answer}");
+        }
+        catch (Exception ex)
+        {
+          Console.Error.WriteLine(ex.ToString());
         }
       }
     }

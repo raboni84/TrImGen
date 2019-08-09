@@ -1,10 +1,8 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-namespace TrImGen
+namespace TrImGen.IO
 {
   public class DriveStream : Stream
   {
