@@ -57,6 +57,9 @@ namespace TrImGen.IO
       int nOutBufferSize,
       int* pBytesReturned,
       IntPtr lpOverlapped);
+    
+    [DllImport("libc", SetLastError = true)]
+    extern static unsafe int ioctl(SafeFileHandle handle, int request, int* data);
 
     static readonly uint Win_DiskGetLength = 0x7405c;
 
@@ -172,25 +175,29 @@ namespace TrImGen.IO
 
     public static unsafe long GetDriveLength(SafeFileHandle hDrive)
     {
+      long length;
       if (IsLinux)
       {
-        throw new NotImplementedException();
+        length = lseek(hDrive, 0, 2);
+        lseek(hDrive, 0, 0);
       }
       else
       {
-        long length;
         int bytesRet;
         if (!DeviceIoControl(hDrive, Win_DiskGetLength, null, 0, &length, 8, &bytesRet, IntPtr.Zero))
           throw new InvalidDataException();
-        return length;
       }
+      return length;
     }
 
     public static unsafe int GetSectorSize(SafeFileHandle hDrive)
     {
       if (IsLinux)
       {
-        throw new NotImplementedException();
+        int res;
+        if (ioctl(hDrive, 0x1268, &res) >= 0) // BLKSSZGET
+          return res;
+        throw new InvalidDataException();
       }
       else
       {
