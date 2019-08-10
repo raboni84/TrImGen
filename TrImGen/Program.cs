@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -11,7 +11,6 @@ using DiscUtils.Streams;
 using DiscUtils.Registry;
 using YamlDotNet.Serialization;
 using TrImGen.IO;
-using System.Threading.Tasks;
 
 namespace TrImGen
 {
@@ -30,6 +29,11 @@ namespace TrImGen
         var yaml = new Deserializer();
         config = yaml.Deserialize<Config>(sr);
       }
+
+#if DEBUG
+      SelfTest.Run();
+      config.SourceDisks = new string[] { "Test/Test.vhd" };
+#endif
 
       foreach (var arg in config.SourceDisks)
       {
@@ -135,7 +139,6 @@ namespace TrImGen
                   DetectFileSystemAndAnalyze(sub, target, $"part{partIdx++}{Path.DirectorySeparatorChar}");
                 }
               }
-              return;
             }
           }
         }

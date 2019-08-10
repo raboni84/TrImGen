@@ -5,6 +5,9 @@ TargetDiskSize: 1099511627776
 TargetPartitionType: ExFat
 CopyRetryCount: 3
 SearchPatterns:
+# EFI Files
+- (?<!\w)EFI[/\\]boot
+- (?<!\w)EFI[/\\]Microsoft[/\\]boot
 # Meta Files (Win)
 - (?<!\w)\$mft$
 - (?<!\w)\$logfile$
@@ -56,6 +59,7 @@ EventHints:
 EventSearchPatterns:
 - .+
 RegistryHints:
+- (?<!\w)EFI[/\\]Microsoft[/\\]boot[/\\]BCD
 - (?<!\w)system32[/\\].*[/\\]sam$
 - (?<!\w)system32[/\\].*[/\\]security$
 - (?<!\w)system32[/\\].*[/\\]software$
