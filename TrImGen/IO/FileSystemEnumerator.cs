@@ -46,11 +46,10 @@ namespace TrImGen.IO
           fileEnum.Reset();
           foreach (var elem in dir.GetDirectories())
           {
-            if (dir.Name == "." || dir.Name == "..")
+            if (elem.Name != "." && elem.Name != "..")
             {
-              continue;
+              queue.Enqueue(elem);
             }
-            queue.Enqueue(elem);
           }
         }
         if (!fileEnum.MoveNext())
