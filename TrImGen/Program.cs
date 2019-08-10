@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -68,8 +68,13 @@ namespace TrImGen
 
     private static string GetTargetName(string arg)
     {
-      if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0 ||
-          arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0)
+      if (arg.IndexOf(@"\\.\", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"\\?\", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"/dev/fd", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"/dev/hd", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"/dev/sd", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"/dev/sg", StringComparison.OrdinalIgnoreCase) == 0
+       || arg.IndexOf(@"/dev/sr", StringComparison.OrdinalIgnoreCase) == 0)
       {
         string chars = new string(Path.GetInvalidFileNameChars());
         string chars2 = new string(Path.GetInvalidPathChars());
