@@ -50,9 +50,8 @@ SearchPatterns:
 - (?<!\w)microsoft[/\\]windows[/\\]start\smenu[/\\]programs[/\\]startup[/\\]
 - (?<!\w)thumbs\.db$
 # User Behaviour (Unix)
-- (?<!\w)etc[/\\]hosts
-- (?<!\w)etc[/\\]passwd
-- (?<!\w)etc[/\\]shadow
+- (?<!\w)etc[/\\]
+- (?<!\w)home[/\\].*[/\\]\.
 - (?<!\w)system[/\\]library[/\\]startupitems
 EventHints:
 - \.evtx$

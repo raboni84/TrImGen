@@ -7,3 +7,4 @@ obj/
 *.vhdx
 *.vdi
 *.img
+*.log

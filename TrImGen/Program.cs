@@ -11,6 +11,7 @@ using DiscUtils.Streams;
 using DiscUtils.Registry;
 using YamlDotNet.Serialization;
 using TrImGen.IO;
+using Serilog;
 
 namespace TrImGen
 {
@@ -39,6 +40,11 @@ namespace TrImGen
       {
         string targetName = GetTargetName(arg);
         string targetPath = GetTargetPath(targetName);
+
+        Log.Logger = new LoggerConfiguration()
+          .WriteTo.Console()
+          .WriteTo.File($"{targetName}-.log", rollingInterval: RollingInterval.Hour, encoding: Encoding.UTF8)
+          .CreateLogger();
 
         using (var target = new FileStream(targetPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
         {
@@ -114,7 +120,7 @@ namespace TrImGen
       {
         foreach (var fs in fileSystems)
         {
-          Console.WriteLine(fs.Description);
+          Log.Information(fs.Description);
           using (var fsStream = fs.Open(s))
           {
             AnalyzeFileSystem(fsStream, target, pathOffset);
@@ -129,11 +135,11 @@ namespace TrImGen
           {
             if (disk.IsPartitioned)
             {
-              Console.WriteLine($"Disk has {disk.Partitions.Count} partitions");
+              Log.Information($"Disk has {disk.Partitions.Count} partitions");
               int partIdx = 0;
               foreach (var part in disk.Partitions.Partitions)
               {
-                Console.WriteLine($"Partition {part.FirstSector}-{part.LastSector}");
+                Log.Information($"Partition {part.FirstSector}-{part.LastSector}");
                 using (var sub = part.Open())
                 {
                   DetectFileSystemAndAnalyze(sub, target, $"part{partIdx++}{Path.DirectorySeparatorChar}");
@@ -144,7 +150,7 @@ namespace TrImGen
         }
         catch (Exception ex)
         {
-          Console.Error.WriteLine(ex.ToString());
+          Log.Fatal(ex, ex.Message);
         }
       }
     }
@@ -190,27 +196,25 @@ namespace TrImGen
       Regex search = new Regex(string.Join("|", config.SearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Regex evtxHints = new Regex(string.Join("|", config.EventHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
       Regex regHints = new Regex(string.Join("|", config.RegistryHints), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-      using (var fs = new FileSystemEnumerator(source, search))
+      foreach (var file in new FileSystemEnumerable(source, search))
       {
-        while (fs.MoveNext())
+        string targetPath = null;
+
+        try
         {
-          var file = fs.Current;
-          string targetPath = null;
-
-          Console.Write($"{file.FullName}: ");
-          try
-          {
-            string answer = CopyFileToTarget(target, pathOffset, file, out targetPath);
-            Console.WriteLine($"{answer}");
-          }
-          catch (Exception ex)
-          {
-            Console.Error.WriteLine(ex.ToString());
-          }
-
-          CheckEvtxHint(target, evtxHints, file, targetPath);
-          CheckRegHint(target, regHints, file, targetPath);
+          string answer = CopyFileToTarget(target, pathOffset, file, out targetPath);
+          if (answer == "ok")
+            Log.Information($"{file.FullName}: {answer}");
+          else
+            Log.Warning($"{file.FullName}: {answer}");
         }
+        catch (Exception ex)
+        {
+          Log.Error(ex, ex.Message);
+        }
+
+        CheckEvtxHint(target, evtxHints, file, targetPath);
+        CheckRegHint(target, regHints, file, targetPath);
       }
     }
 
@@ -218,15 +222,17 @@ namespace TrImGen
     {
       if (targetPath != null && regHints.IsMatch(file.FullName))
       {
-        Console.Write($"{file.FullName} analyzing registry: ");
         try
         {
           string answer = AnalyzeRegistryFile(target, targetPath);
-          Console.WriteLine($"{answer}");
+          if (answer == "ok")
+            Log.Information($"{file.FullName} analyzing registry: {answer}");
+          else
+            Log.Warning($"{file.FullName} analyzing registry: {answer}");
         }
         catch (Exception ex)
         {
-          Console.Error.WriteLine(ex.ToString());
+          Log.Error(ex, ex.Message);
         }
       }
     }
@@ -235,15 +241,17 @@ namespace TrImGen
     {
       if (targetPath != null && evtxHints.IsMatch(file.FullName))
       {
-        Console.Write($"{file.FullName} analyzing evtx file: ");
         try
         {
           string answer = AnalyzeEventFile(target, targetPath);
-          Console.WriteLine($"{answer}");
+          if (answer == "ok")
+            Log.Information($"{file.FullName} analyzing evtx file: {answer}");
+          else
+            Log.Warning($"{file.FullName} analyzing evtx file: {answer}");
         }
         catch (Exception ex)
         {
-          Console.Error.WriteLine(ex.ToString());
+          Log.Error(ex, ex.Message);
         }
       }
     }
@@ -292,7 +300,7 @@ namespace TrImGen
     private static string AnalyzeEventFile(IFileSystem target, string targetPath)
     {
       Regex search = new Regex(string.Join("|", config.EventSearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
-      
+
       Directory.Delete("tmp", true);
       Directory.CreateDirectory("tmp");
 
@@ -301,7 +309,7 @@ namespace TrImGen
       {
         ss.CopyTo(fs);
       }
-      
+
       using (var rd = new EventLogReader($"tmp{Path.DirectorySeparatorChar}eventlog", PathType.FilePath))
       using (var fs = target.OpenFile($"{targetPath}_EvtxLog.txt", FileMode.Create, FileAccess.Write))
       using (var sw = new StreamWriter(fs))
