@@ -1,0 +1,6 @@
+*			text=auto
+
+*.cs		text eol=crlf diff=csharp
+*.csproj	text eol=crlf diff=csharp
+
+*.gz		binary

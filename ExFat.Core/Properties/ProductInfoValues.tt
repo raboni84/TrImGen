@@ -1,0 +1,19 @@
+﻿<#
+// all common data between assembly information and nuspec package are stored here
+
+// semantic versioning:
+// Major is incompatible API changes,
+// Minor is backwards-compatible changes
+// Patch is no change.
+var VersionMajor = "0";
+var VersionMinor = "9";
+var VersionPatch = "16";
+var Version = VersionMajor + "." + VersionMinor + "." + VersionPatch;
+var PreVersion = "";
+
+var Title = "ExFat";
+var Company = "picrap";
+var LicenseUrl = "https://opensource.org/licenses/MIT";
+var Description = "ExFat allows to manage exFAT partitions at different levels: "
++ "partition, file system entry or full path.";
+#>

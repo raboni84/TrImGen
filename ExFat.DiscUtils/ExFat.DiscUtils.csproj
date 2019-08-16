@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyTitle>ExFat DiscUtils</AssemblyTitle>
+    <AssemblyDescription>DiscUtils wrapper for ExFAT</AssemblyDescription>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Discutils" Version="0.15.1-ci0002" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\ExFat.Core\ExFat.Core.csproj" />
+  </ItemGroup>
+
+</Project>
