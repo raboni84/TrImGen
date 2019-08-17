@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -12,6 +12,8 @@ using DiscUtils.Registry;
 using YamlDotNet.Serialization;
 using TrImGen.IO;
 using Serilog;
+using Newtonsoft.Json;
+using System.Xml.Linq;
 
 namespace TrImGen
 {
@@ -302,7 +304,7 @@ namespace TrImGen
       Regex search = new Regex(string.Join("|", config.EventSearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
       if (Directory.Exists("tmp"))
-      Directory.Delete("tmp", true);
+        Directory.Delete("tmp", true);
       Directory.CreateDirectory("tmp");
 
       using (var ss = target.OpenFile(targetPath, FileMode.Create, FileAccess.Read))
@@ -312,7 +314,7 @@ namespace TrImGen
       }
 
       using (var rd = new EventLogReader($"tmp{Path.DirectorySeparatorChar}eventlog", PathType.FilePath))
-      using (var fs = target.OpenFile($"{targetPath}_EvtxLog.txt", FileMode.Create, FileAccess.Write))
+      using (var fs = target.OpenFile($"{targetPath}.ndjson", FileMode.Create, FileAccess.Write))
       using (var sw = new StreamWriter(fs))
       {
         EventRecord evt;
@@ -323,7 +325,8 @@ namespace TrImGen
             string evtstr = evt.ToXml();
             if (search.IsMatch(evtstr))
             {
-              sw.WriteLine(evtstr);
+              string json = JsonConvert.SerializeXNode(XElement.Parse(evtstr));
+              sw.WriteLine(json);
             }
           }
           catch (Exception)
@@ -334,7 +337,7 @@ namespace TrImGen
       }
 
       if (Directory.Exists("tmp"))
-      Directory.Delete("tmp", true);
+        Directory.Delete("tmp", true);
       return "ok";
     }
 
