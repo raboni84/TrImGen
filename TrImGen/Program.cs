@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -301,6 +301,7 @@ namespace TrImGen
     {
       Regex search = new Regex(string.Join("|", config.EventSearchPatterns), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
+      if (Directory.Exists("tmp"))
       Directory.Delete("tmp", true);
       Directory.CreateDirectory("tmp");
 
@@ -332,6 +333,7 @@ namespace TrImGen
         }
       }
 
+      if (Directory.Exists("tmp"))
       Directory.Delete("tmp", true);
       return "ok";
     }
