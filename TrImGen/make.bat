@@ -12,7 +12,7 @@ set rid[7]=osx-x64
 set "x=0"
 :SymLoop
 if defined rid[%x%] (
-  call dotnet publish -r %%rid[%x%]%% -c Release
+  call dotnet publish -r %%rid[%x%]%% -c Release /p:TrimUnusedDependencies=true
   call copy config.yml bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\config.yml
   call copy ..\LICENSE bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\LICENSE
   call copy ..\README.md bin\Release\netcoreapp2.0\%%rid[%x%]%%\publish\README.md
